@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import Constants from 'expo-constants';
-import { loadHealthDaily, weekdayVsWeekendForApp, aggregateScreentimeByApp } from '../data/loaders';
-import { summarizeHealth } from '../utils/analytics';
+import { loadHealthDaily, loadScreentime } from '../data/loaders';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Message = { 
@@ -38,9 +38,8 @@ export default function AskAltuScreen() {
   const flatListRef = useRef<FlatList>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const health = useMemo(() => loadHealthDaily(), []);
-  const healthSummary = useMemo(() => summarizeHealth(health), [health]);
-  const screentimeByApp = useMemo(() => aggregateScreentimeByApp(), []);
+  const healthData = useMemo(() => loadHealthDaily(), []);
+  const screentimeData = useMemo(() => loadScreentime(), []);
 
   const addMessage = useCallback((msg: Message) => {
     setMessages((prev) => [msg, ...prev]);
@@ -130,14 +129,36 @@ export default function AskAltuScreen() {
       }
 
       const payload = {
-        healthSummary,
-        screentimeByApp,
-        exampleWeekdayWeekendTwitter: weekdayVsWeekendForApp('Twitter'),
+        healthData: healthData,
+        screentimeData: screentimeData,
       };
 
       const sys =
-        'You are Altu, a helpful health assistant. Use ONLY the provided JSON data to answer. Be concise and numeric when possible. If uncertain, state the limitation. The data includes health metrics (steps, sleep, workout) and screentime data by app.';
-      const user = `Question: ${text}\n\nData JSON:\n${JSON.stringify(payload)}`;
+        'You are Altu, a helpful health assistant. You have access to complete health and screentime data. The healthData array contains daily records with: date, steps, sleepMinutes, activeEnergyKcal, workoutMinutes. The screentimeData array contains records with: date, app, minutes, category. Answer questions about specific dates, trends, comparisons, etc. Be concise and numeric. Today is ' + new Date().toISOString().split('T')[0] + '.';
+      
+      // Build conversation history (last 10 messages for context, excluding welcome message)
+      const conversationHistory = messages
+        .filter(m => m.id !== 'welcome' && !m.isTyping)
+        .slice(0, 10)
+        .reverse()
+        .map(m => ({
+          role: m.isUser ? 'user' : 'assistant',
+          content: m.text
+        }));
+
+      // Add current user message
+      conversationHistory.push({
+        role: 'user',
+        content: text
+      });
+
+      // Add data context to first user message only to save tokens
+      if (conversationHistory.length === 1) {
+        conversationHistory[0].content = `Question: ${text}\n\nData JSON:\n${JSON.stringify(payload)}`;
+      } else {
+        // For follow-up questions, prepend a note about data availability
+        conversationHistory[conversationHistory.length - 1].content = `[You have access to the same health and screentime data from the conversation]\n\nQuestion: ${text}`;
+      }
 
       const resp = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -149,7 +170,7 @@ export default function AskAltuScreen() {
           model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: sys },
-            { role: 'user', content: user },
+            ...conversationHistory,
           ],
           temperature: 0.3,
           max_tokens: 400,
@@ -174,10 +195,44 @@ export default function AskAltuScreen() {
   const renderMessage = ({ item }: { item: Message }) => (
     <View style={[styles.messageContainer, item.isUser ? styles.userMessage : styles.botMessage]}>
       <View style={[styles.bubble, item.isUser ? styles.userBubble : styles.botBubble]}>
-        <Text style={[styles.messageText, item.isUser ? styles.userText : styles.botText]}>
-          {item.text}
-          {item.isTyping && <Text style={styles.cursor}>▋</Text>}
-        </Text>
+        {item.isUser ? (
+          <Text style={[styles.messageText, styles.userText]}>
+            {item.text}
+          </Text>
+        ) : (
+          <View>
+            <Markdown
+              style={{
+                body: { color: '#111', fontSize: 15, lineHeight: 20 },
+                strong: { fontWeight: '700', color: '#111' },
+                em: { fontStyle: 'italic', color: '#111' },
+                paragraph: { marginTop: 0, marginBottom: 4 },
+                bullet_list: { marginTop: 2, marginBottom: 2 },
+                ordered_list: { marginTop: 2, marginBottom: 2 },
+                list_item: { marginTop: 2, marginBottom: 2 },
+                code_inline: { 
+                  backgroundColor: '#f0f0f0', 
+                  color: '#111',
+                  paddingHorizontal: 4,
+                  paddingVertical: 2,
+                  borderRadius: 3,
+                  fontSize: 14,
+                  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                },
+                code_block: {
+                  backgroundColor: '#f0f0f0',
+                  padding: 8,
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+                },
+              }}
+            >
+              {item.text || ' '}
+            </Markdown>
+            {item.isTyping && <Text style={styles.cursor}>▋</Text>}
+          </View>
+        )}
       </View>
     </View>
   );

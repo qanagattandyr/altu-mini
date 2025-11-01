@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo, useState, useRef } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { healthSeries, aggregateScreentimeByCategory, loadScreentime } from '../data/loaders';
 import MetricTile from '../components/MetricTile';
 import InsightCard from '../components/InsightCard';
@@ -12,6 +12,7 @@ export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const series = useMemo(() => healthSeries(), []);
   const [selectedTrend, setSelectedTrend] = useState<'activity' | 'sleep' | 'screen'>('activity');
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const stepsData = series.steps.points.map((p) => p.value);
   const sleepData = series.sleep.points.map((p) => p.value / 60); // hours
@@ -93,14 +94,41 @@ export default function DashboardScreen() {
   const stepsChange = getChange(latestSteps, avg90Steps);
   const sleepChange = getChange(latestSleep, avg90Sleep);
 
+  // Animated header values
+  const headerScale = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [1, 0.7],
+    extrapolate: 'clamp',
+  });
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  const titleFontSize = scrollY.interpolate({
+    inputRange: [0, 60],
+    outputRange: [32, 20],
+    extrapolate: 'clamp',
+  });
+
   return (
     <LinearGradient colors={["#a8d5ff", "#e8f4ff"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
       <SafeAreaView style={styles.container} edges={['top']}>
-        <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 32 }}>
+        <Animated.ScrollView 
+          style={styles.container} 
+          contentContainerStyle={{ paddingBottom: 32 }}
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
+        >
           {/* Header */}
           <View style={[styles.header, { paddingTop: Math.max(6, insets.top * 0.25) }]}>
-            <Text style={styles.headerTitle}>Summary</Text>
-            <Text style={styles.headerSubtitle}>Today — {fmtDate(lastDate)}</Text>
+            <Animated.Text style={[styles.headerTitle, { fontSize: titleFontSize }]}>Summary</Animated.Text>
+            <Animated.Text style={[styles.headerSubtitle, { opacity: headerOpacity }]}>Today — {fmtDate(lastDate)}</Animated.Text>
           </View>
 
           <View style={styles.content}>
@@ -226,7 +254,7 @@ export default function DashboardScreen() {
               </View>
             </View>
           </View>
-        </ScrollView>
+        </Animated.ScrollView>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -235,7 +263,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: 'transparent' },
   header: { paddingHorizontal: 16, paddingBottom: 12 },
-  headerTitle: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
+  headerTitle: { fontWeight: '800', letterSpacing: -0.5 },
   headerSubtitle: { marginTop: 2, fontSize: 14, fontWeight: '600', color: '#666' },
   content: { paddingHorizontal: 16 },
   section: { marginBottom: 24 },
