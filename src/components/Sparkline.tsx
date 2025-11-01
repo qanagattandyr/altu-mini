@@ -20,28 +20,40 @@ export default function Sparkline({
   showBaseline = true,
 }: Props) {
   if (!values || values.length === 0) return <View style={{ width, height }} />;
+  
+  const padding = strokeWidth;
+  const chartWidth = width - padding * 2;
+  const chartHeight = height - padding * 2;
+  
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const stepX = values.length <= 1 ? width : width / (values.length - 1);
+  const stepX = values.length <= 1 ? chartWidth : chartWidth / (values.length - 1);
 
   const points = values
     .map((v, i) => {
-      const x = i * stepX;
-      const y = height - ((v - min) / range) * height;
+      const x = padding + i * stepX;
+      const y = padding + chartHeight - ((v - min) / range) * chartHeight;
       return `${x},${y}`;
     })
     .join(' ');
 
-  const baselineY = height - ((0 - min) / range) * height;
+  const baselineY = padding + chartHeight - ((0 - min) / range) * chartHeight;
 
   return (
     <View style={[styles.container, { width, height }]}>
       <Svg width={width} height={height}>
-        {showBaseline && baselineY >= 0 && baselineY <= height && (
-          <Line x1={0} y1={baselineY} x2={width} y2={baselineY} stroke="#eee" strokeWidth={1} />
+        {showBaseline && baselineY >= padding && baselineY <= height - padding && (
+          <Line x1={padding} y1={baselineY} x2={width - padding} y2={baselineY} stroke="#eee" strokeWidth={1} />
         )}
-        <Polyline points={points} fill="none" stroke={stroke} strokeWidth={strokeWidth} />
+        <Polyline 
+          points={points} 
+          fill="none" 
+          stroke={stroke} 
+          strokeWidth={strokeWidth}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </Svg>
     </View>
   );
