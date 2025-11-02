@@ -1,6 +1,6 @@
-import React, { useMemo, useState, useRef } from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
-import { healthSeries, aggregateScreentimeByCategory, loadScreentime } from '../data/loaders';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Animated, ActivityIndicator } from 'react-native';
+import { healthSeries, aggregateScreentimeByCategoryLast7Days, loadScreentime } from '../data/dbLoaders';
 import MetricTile from '../components/MetricTile';
 import InsightCard from '../components/InsightCard';
 import MiniBars from '../components/MiniBars';
@@ -10,14 +10,47 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const series = useMemo(() => healthSeries(), []);
+  const [loading, setLoading] = useState(true);
+  const [series, setSeries] = useState<any>(null);
+  const [screentime, setScreentime] = useState<any[]>([]);
   const [selectedTrend, setSelectedTrend] = useState<'activity' | 'sleep' | 'screen'>('activity');
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const stepsData = series.steps.points.map((p) => p.value);
-  const sleepData = series.sleep.points.map((p) => p.value / 60); // hours
-  const workoutData = series.workout.points.map((p) => p.value);
-  const energyData = series.energy.points.map((p) => p.value);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [healthData, screentimeData] = await Promise.all([
+          healthSeries(),
+          loadScreentime()
+        ]);
+        setSeries(healthData);
+        setScreentime(screentimeData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (loading || !series) {
+    return (
+      <LinearGradient colors={["#a8d5ff", "#e8f4ff"]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ flex: 1 }}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#007aff" />
+            <Text style={{ marginTop: 12, color: '#666' }}>Loading data...</Text>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
+    );
+  }
+
+  const stepsData = series.steps.points.map((p: any) => p.value);
+  const sleepData = series.sleep.points.map((p: any) => p.value / 60); // hours
+  const workoutData = series.workout.points.map((p: any) => p.value);
+  const energyData = series.energy.points.map((p: any) => p.value);
   
   // Get last 7 days for sparklines
   const last7Steps = stepsData.slice(-7);
@@ -39,21 +72,20 @@ export default function DashboardScreen() {
   const avg7Steps = avg(stepsData.slice(-7));
 
   // Screen time
-  const screentime = useMemo(() => loadScreentime(), []);
   const latestDateStr = lastDate.toISOString().split('T')[0];
   const todayScreen = screentime
-    .filter((s) => s.date === latestDateStr)
-    .reduce((sum, s) => sum + s.minutes, 0);
+    .filter((s: any) => s.date === latestDateStr)
+    .reduce((sum: number, s: any) => sum + s.minutes, 0);
   const last7Screen = screentime
-    .filter((s) => {
+    .filter((s: any) => {
       const date = new Date(s.date);
       const daysDiff = (lastDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
       return daysDiff >= 0 && daysDiff < 7;
     })
-    .reduce((sum, s) => sum + s.minutes, 0) / 7;
+    .reduce((sum: number, s: any) => sum + s.minutes, 0) / 7;
 
-  const screentimeByCategory = useMemo(() => {
-    const last7Days = screentime.filter((s) => {
+  const screentimeByCategory = (() => {
+    const last7Days = screentime.filter((s: any) => {
       const date = new Date(s.date);
       const daysDiff = (lastDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
       return daysDiff >= 0 && daysDiff < 7;
@@ -66,7 +98,7 @@ export default function DashboardScreen() {
       agg[key] += row.minutes;
     }
     return agg;
-  }, [screentime, lastDate]);
+  })();
   
   const categoryData = Object.entries(screentimeByCategory)
     .map(([category, minutes]) => ({ category, minutes }))
@@ -74,7 +106,7 @@ export default function DashboardScreen() {
     .slice(0, 3);
 
   // Insights
-  const workoutEnergyCorr = useMemo(() => pearsonCorrelation(workoutData, energyData), [workoutData, energyData]);
+  const workoutEnergyCorr = pearsonCorrelation(workoutData, energyData);
   
   const fmtDate = (d: Date) => {
     const month = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' });

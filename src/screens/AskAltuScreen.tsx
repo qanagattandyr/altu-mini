@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import Constants from 'expo-constants';
-import { loadHealthDaily, loadScreentime } from '../data/loaders';
+import { loadHealthDaily, loadScreentime } from '../data/dbLoaders';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Message = { 
@@ -26,6 +26,7 @@ type Message = {
 
 export default function AskAltuScreen() {
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [inputText, setInputText] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -35,11 +36,28 @@ export default function AskAltuScreen() {
       timestamp: Date.now(),
     },
   ]);
+  const [healthData, setHealthData] = useState<any[]>([]);
+  const [screentimeData, setScreentimeData] = useState<any[]>([]);
   const flatListRef = useRef<FlatList>(null);
   const typingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const healthData = useMemo(() => loadHealthDaily(), []);
-  const screentimeData = useMemo(() => loadScreentime(), []);
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [health, screentime] = await Promise.all([
+          loadHealthDaily(),
+          loadScreentime()
+        ]);
+        setHealthData(health);
+        setScreentimeData(screentime);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      } finally {
+        setDataLoading(false);
+      }
+    }
+    loadData();
+  }, []);
 
   const addMessage = useCallback((msg: Message) => {
     setMessages((prev) => [msg, ...prev]);
@@ -134,7 +152,7 @@ export default function AskAltuScreen() {
       };
 
       const sys =
-        'You are Altu, a helpful health assistant. You have access to complete health and screentime data. The healthData array contains daily records with: date, steps, sleepMinutes, activeEnergyKcal, workoutMinutes. The screentimeData array contains records with: date, app, minutes, category. Answer questions about specific dates, trends, comparisons, etc. Be concise and numeric. Today is ' + new Date().toISOString().split('T')[0] + '.';
+        'You are Altu, a helpful health assistant. You have access to complete health and screentime data. The healthData array contains daily records with: date, steps, sleepMinutes, activeEnergyKcal, workoutMinutes. The screentimeData array contains records with: date, app, minutes, category. IMPORTANT: Only use the actual data provided. Do not make up numbers. If data is missing for a date, say so. Answer questions about specific dates, trends, comparisons, etc. Be concise and numeric. Today is ' + new Date().toISOString().split('T')[0] + '.';
       
       // Build conversation history (last 10 messages for context, excluding welcome message)
       const conversationHistory = messages
@@ -167,13 +185,13 @@ export default function AskAltuScreen() {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: [
             { role: 'system', content: sys },
             ...conversationHistory,
           ],
-          temperature: 0.3,
-          max_tokens: 400,
+          temperature: 0.1,
+          max_tokens: 500,
         }),
       });
 
