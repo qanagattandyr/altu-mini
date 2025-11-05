@@ -45,8 +45,17 @@ async function initializeDatabase(database: SQLite.SQLiteDatabase) {
     'SELECT COUNT(*) as count FROM health_daily'
   );
 
-  // Only seed if empty
-  if (healthCount && healthCount.count === 0) {
+  // Check what the latest date in DB is
+  const latestDate = await database.getFirstAsync<{ latest: string }>(
+    'SELECT MAX(date) as latest FROM health_daily'
+  );
+
+  const expectedLatest = healthRaw[healthRaw.length - 1].date;
+  
+  // Re-seed if empty OR if data is outdated
+  if ((healthCount && healthCount.count === 0) || 
+      !latestDate?.latest || 
+      latestDate.latest !== expectedLatest) {
     console.log('Seeding database with initial data...');
     await seedDatabase(database);
   }

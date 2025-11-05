@@ -13,6 +13,7 @@ import {
 import Markdown from 'react-native-markdown-display';
 import Constants from 'expo-constants';
 import { loadHealthDaily, loadScreentime } from '../data/dbLoaders';
+import { executeGeneratedQuery, getQueryGenerationSystemPrompt, ANSWER_SYSTEM_PROMPT } from '../utils/queryGeneration';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Message = { 
@@ -146,57 +147,78 @@ export default function AskAltuScreen() {
         return;
       }
 
-      const payload = {
-        healthData: healthData,
-        screentimeData: screentimeData,
-      };
-
-      const sys =
-        'You are Altu, a helpful health assistant. You have access to complete health and screentime data. The healthData array contains daily records with: date, steps, sleepMinutes, activeEnergyKcal, workoutMinutes. The screentimeData array contains records with: date, app, minutes, category. IMPORTANT: Only use the actual data provided. Do not make up numbers. If data is missing for a date, say so. Answer questions about specific dates, trends, comparisons, etc. Be concise and numeric. Today is ' + new Date().toISOString().split('T')[0] + '.';
-      
-      // Build conversation history (last 10 messages for context, excluding welcome message)
-      const conversationHistory = messages
-        .filter(m => m.id !== 'welcome' && !m.isTyping)
-        .slice(0, 10)
-        .reverse()
-        .map(m => ({
-          role: m.isUser ? 'user' : 'assistant',
-          content: m.text
-        }));
-
-      // Add current user message
-      conversationHistory.push({
-        role: 'user',
-        content: text
-      });
-
-      // Add data context to first user message only to save tokens
-      if (conversationHistory.length === 1) {
-        conversationHistory[0].content = `Question: ${text}\n\nData JSON:\n${JSON.stringify(payload)}`;
-      } else {
-        // For follow-up questions, prepend a note about data availability
-        conversationHistory[conversationHistory.length - 1].content = `[You have access to the same health and screentime data from the conversation]\n\nQuestion: ${text}`;
-      }
-
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      // STAGE 1: Generate SQL Query
+      const queryResponse = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: 'gpt-4o',
+          model: 'gpt-4o-mini', // Cheaper model for query generation
           messages: [
-            { role: 'system', content: sys },
-            ...conversationHistory,
+            { role: 'system', content: getQueryGenerationSystemPrompt() },
+            { role: 'user', content: text }
+          ],
+          temperature: 0.1,
+          max_tokens: 200,
+        }),
+      });
+
+      const queryJson = await queryResponse.json();
+      const sqlQuery = queryJson?.choices?.[0]?.message?.content?.trim();
+
+      if (!sqlQuery) {
+        throw new Error('Failed to generate query');
+      }
+
+      console.log('Generated SQL:', sqlQuery);
+
+      // STAGE 2: Execute Query
+      let queryResults;
+      try {
+        queryResults = await executeGeneratedQuery(sqlQuery);
+      } catch (error: any) {
+        // If query fails, fall back to summary-based approach
+        console.error('Query execution failed:', error.message);
+        queryResults = {
+          error: 'Could not execute query',
+          fallback: true
+        };
+      }
+
+      console.log('Query results:', queryResults);
+
+      // STAGE 3: Generate Answer with Results
+      const answerResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: 'gpt-4o', // Better model for answering
+          messages: [
+            { role: 'system', content: ANSWER_SYSTEM_PROMPT },
+            { 
+              role: 'user', 
+              content: `User Question: "${text}"
+
+SQL Query Executed: ${sqlQuery}
+
+Query Results:
+${JSON.stringify(queryResults, null, 2)}
+
+Please answer the user's question using these results.`
+            }
           ],
           temperature: 0.1,
           max_tokens: 500,
         }),
       });
 
-      const json = await resp.json();
-      const content = json?.choices?.[0]?.message?.content ?? 'No response';
+      const answerJson = await answerResponse.json();
+      const content = answerJson?.choices?.[0]?.message?.content ?? 'No response';
       addTypingMessage(String(content), String(Date.now() + 2));
     } catch (e: any) {
       addMessage({

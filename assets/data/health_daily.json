@@ -628,5 +628,75 @@
     "sleep_minutes": 458,
     "active_energy_kcal": 1366,
     "workout_minutes": 92
+  },
+  {
+    "date": "2025-10-26",
+    "steps": 9245,
+    "sleep_minutes": 442,
+    "active_energy_kcal": 1124,
+    "workout_minutes": 45
+  },
+  {
+    "date": "2025-10-27",
+    "steps": 7823,
+    "sleep_minutes": 465,
+    "active_energy_kcal": 892,
+    "workout_minutes": 0
+  },
+  {
+    "date": "2025-10-28",
+    "steps": 11456,
+    "sleep_minutes": 438,
+    "active_energy_kcal": 1287,
+    "workout_minutes": 67
+  },
+  {
+    "date": "2025-10-29",
+    "steps": 8634,
+    "sleep_minutes": 471,
+    "active_energy_kcal": 945,
+    "workout_minutes": 32
+  },
+  {
+    "date": "2025-10-30",
+    "steps": 6891,
+    "sleep_minutes": 456,
+    "active_energy_kcal": 723,
+    "workout_minutes": 0
+  },
+  {
+    "date": "2025-10-31",
+    "steps": 10234,
+    "sleep_minutes": 412,
+    "active_energy_kcal": 1156,
+    "workout_minutes": 53
+  },
+  {
+    "date": "2025-11-01",
+    "steps": 9567,
+    "sleep_minutes": 448,
+    "active_energy_kcal": 1078,
+    "workout_minutes": 41
+  },
+  {
+    "date": "2025-11-02",
+    "steps": 8123,
+    "sleep_minutes": 467,
+    "active_energy_kcal": 934,
+    "workout_minutes": 28
+  },
+  {
+    "date": "2025-11-03",
+    "steps": 12345,
+    "sleep_minutes": 423,
+    "active_energy_kcal": 1389,
+    "workout_minutes": 75
+  },
+  {
+    "date": "2025-11-04",
+    "steps": 6478,
+    "sleep_minutes": 451,
+    "active_energy_kcal": 812,
+    "workout_minutes": 0
   }
 ]
