@@ -3,7 +3,7 @@ import { HealthDaily, ScreenTimeEntry, NamedSeries, TimeSeriesPoint } from '../t
 
 function parseDate(dateStr: string): Date {
   const [y, m, d] = dateStr.split('-').map((s) => parseInt(s, 10));
-  return new Date(Date.UTC(y, m - 1, d));
+  return new Date(y, m - 1, d);
 }
 
 export async function loadHealthDaily(): Promise<HealthDaily[]> {

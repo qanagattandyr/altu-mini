@@ -8,7 +8,7 @@ import { pearsonCorrelation } from '../utils/analytics';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export default function DashboardScreen() {
+export default function DashboardScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(true);
   const [series, setSeries] = useState<any>(null);
@@ -175,6 +175,7 @@ export default function DashboardScreen() {
                     changeType={stepsChange.type}
                     sparklineData={last7Steps}
                     color="#ff6b9d"
+                    onPress={() => navigation.navigate('StepsDetail')}
                   />
                 </View>
                 <View style={styles.gridItem}>
@@ -186,6 +187,7 @@ export default function DashboardScreen() {
                     changeType={sleepChange.type}
                     sparklineData={last7Sleep}
                     color="#6c5ce7"
+                    onPress={() => navigation.navigate('SleepDetail')}
                   />
                 </View>
                 <View style={styles.gridItem}>
@@ -195,6 +197,7 @@ export default function DashboardScreen() {
                     unit="min"
                     sparklineData={last7Workout}
                     color="#27ae60"
+                    onPress={() => navigation.navigate('WorkoutDetail')}
                   />
                 </View>
                 <View style={styles.gridItem}>
@@ -204,6 +207,7 @@ export default function DashboardScreen() {
                     unit="kcal"
                     sparklineData={last7Energy}
                     color="#f39c12"
+                    onPress={() => navigation.navigate('EnergyDetail')}
                   />
                 </View>
               </View>

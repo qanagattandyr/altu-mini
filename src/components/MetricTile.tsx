@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Sparkline from './Sparkline';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import ColumnChart from './ColumnChart';
 
 type MetricTileProps = {
   title: string;
@@ -11,6 +11,7 @@ type MetricTileProps = {
   sparklineData?: number[];
   color?: string;
   invertColors?: boolean; // For metrics where increase is bad (e.g., screen time)
+  onPress?: () => void;
 };
 
 export default function MetricTile({ 
@@ -22,13 +23,14 @@ export default function MetricTile({
   sparklineData,
   color = '#007aff',
   invertColors = false,
+  onPress,
 }: MetricTileProps) {
   const changeColor = invertColors 
     ? (changeType === 'up' ? '#e74c3c' : changeType === 'down' ? '#27ae60' : '#999')
     : (changeType === 'up' ? '#27ae60' : changeType === 'down' ? '#e74c3c' : '#999');
   const changeIcon = changeType === 'up' ? '↑' : changeType === 'down' ? '↓' : '−';
 
-  return (
+  const content = (
     <View style={styles.tile}>
       <Text style={styles.title}>{title}</Text>
       <View style={styles.valueRow}>
@@ -42,11 +44,21 @@ export default function MetricTile({
       )}
       {sparklineData && sparklineData.length > 0 && (
         <View style={styles.sparklineContainer}>
-          <Sparkline values={sparklineData} stroke={color} height={24} width={140} />
+          <ColumnChart values={sparklineData} fill={color} height={32} width={140} />
         </View>
       )}
     </View>
   );
+
+  if (onPress) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+        {content}
+      </TouchableOpacity>
+    );
+  }
+
+  return content;
 }
 
 const styles = StyleSheet.create({
@@ -88,7 +100,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   sparklineContainer: {
-    height: 24,
+    height: 32,
     marginTop: 4,
     overflow: 'hidden',
   },
