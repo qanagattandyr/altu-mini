@@ -12136,5 +12136,89 @@
     "app": "Gmail",
     "minutes": 11,
     "category": "Productivity & Finance"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "Instagram",
+    "minutes": 22,
+    "category": "Social"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "TikTok",
+    "minutes": 15,
+    "category": "Social"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "YouTube",
+    "minutes": 31,
+    "category": "Entertainment"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "Spotify",
+    "minutes": 28,
+    "category": "Entertainment"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "Safari",
+    "minutes": 19,
+    "category": "Information & Reading"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "Gmail",
+    "minutes": 8,
+    "category": "Productivity & Finance"
+  },
+  {
+    "date": "2025-11-05",
+    "app": "Slack",
+    "minutes": 42,
+    "category": "Productivity & Finance"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "Instagram",
+    "minutes": 16,
+    "category": "Social"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "X",
+    "minutes": 12,
+    "category": "Social"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "YouTube",
+    "minutes": 28,
+    "category": "Entertainment"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "Spotify",
+    "minutes": 33,
+    "category": "Entertainment"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "Safari",
+    "minutes": 17,
+    "category": "Information & Reading"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "Gmail",
+    "minutes": 9,
+    "category": "Productivity & Finance"
+  },
+  {
+    "date": "2025-11-06",
+    "app": "Notion",
+    "minutes": 24,
+    "category": "Productivity & Finance"
   }
 ]

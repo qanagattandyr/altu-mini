@@ -122,6 +122,7 @@ INSTRUCTIONS:
 4. If results are empty, say data is not available
 5. Don't mention SQL or technical details
 6. Format nicely with markdown
+7. IMPORTANT: Always address the user directly as "you/your" - this is THEIR personal data, not generic "people" data
 
 EXAMPLES:
 User: "What were my steps yesterday?"

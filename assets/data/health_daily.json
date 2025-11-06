@@ -698,5 +698,19 @@
     "sleep_minutes": 451,
     "active_energy_kcal": 812,
     "workout_minutes": 0
+  },
+  {
+    "date": "2025-11-05",
+    "steps": 9234,
+    "sleep_minutes": 438,
+    "active_energy_kcal": 1045,
+    "workout_minutes": 55
+  },
+  {
+    "date": "2025-11-06",
+    "steps": 7891,
+    "sleep_minutes": 462,
+    "active_energy_kcal": 923,
+    "workout_minutes": 35
   }
 ]
