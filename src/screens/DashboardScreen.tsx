@@ -105,6 +105,31 @@ export default function DashboardScreen({ navigation }: any) {
     .sort((a, b) => b.minutes - a.minutes)
     .slice(0, 3);
 
+  const screentimeByApp = (() => {
+    const last7Days = screentime.filter((s: any) => {
+      const date = new Date(s.date);
+      const daysDiff = (lastDate.getTime() - date.getTime()) / (1000 * 60 * 60 * 24);
+      return daysDiff >= 0 && daysDiff < 7;
+    });
+    
+    const agg: Record<string, number> = {};
+    for (const row of last7Days) {
+      const key = row.app || 'Unknown';
+      if (!agg[key]) agg[key] = 0;
+      agg[key] += row.minutes;
+    }
+
+    for (const key in agg) {
+      agg[key] = Math.floor(agg[key] / 7);
+    }
+    return agg;
+  })();
+  
+  const appData = Object.entries(screentimeByApp)
+    .map(([app, minutes]) => ({ app, minutes }))
+    .sort((a, b) => b.minutes - a.minutes)
+    .slice(0, 3);
+
   // Insights
   const workoutEnergyCorr = pearsonCorrelation(workoutData, energyData);
   
@@ -285,6 +310,31 @@ export default function DashboardScreen({ navigation }: any) {
                       />
                     </View>
                     <Text style={styles.categoryValue}>{(item.minutes / 60).toFixed(1)}h</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
+            {/* Top Apps */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Top Apps</Text>
+              <View style={styles.card}>
+                <Text style={styles.cardSubtitle}>Most Used Apps (Last 7 Days)</Text>
+                {appData.map((item, index) => (
+                  <View key={index} style={styles.categoryRow}>
+                    <Text style={styles.categoryName}>{item.app}</Text>
+                    <View style={styles.categoryBar}>
+                      <View 
+                        style={[
+                          styles.categoryBarFill, 
+                          { 
+                            width: `${(item.minutes / appData[0].minutes) * 100}%`,
+                            backgroundColor: ['#6c5ce7', '#27ae60', '#ff6b9d'][index],
+                          }
+                        ]} 
+                      />
+                    </View>
+                    <Text style={styles.categoryValue}>{item.minutes} min</Text>
                   </View>
                 ))}
               </View>
